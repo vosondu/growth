@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cut">
+<meta name="theme-color" content="#2F5D50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Growth">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Growth</title>
+<style>
+:root{--bg:#F6F3EE;--card:#FFFFFF;--ink:#1E1B18;--soft:#6B645C;--line:#E4DED5;--accent:#2F5D50;--accent-soft:#E3ECE8;--warm:#B8662A;--warm-soft:#F6E7DA;--r:14px}
+@media (prefers-color-scheme:dark){:root{--bg:#161513;--card:#201E1B;--ink:#F1ECE4;--soft:#A39B90;--line:#34302B;--accent:#7FB8A6;--accent-soft:#22332E;--warm:#E39A62;--warm-soft:#3A2A1E}}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+main{max-width:560px;margin:0 auto;padding:20px 18px 110px}
+header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:28px;letter-spacing:-.3px}
+.date{color:var(--soft);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.card h2{font-size:16px;font-weight:600;margin-bottom:4px}
+.hint{color:var(--soft);font-size:14px;margin-bottom:10px}
+.done{background:var(--accent-soft);border-color:transparent}
+.due{border-left:4px solid var(--warm)}
+textarea,input[type=text],input[type=number],input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
+textarea{min-height:76px;resize:vertical}
+textarea:focus,input:focus{border-color:var(--accent)}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 16px;cursor:pointer;background:var(--accent);color:var(--card)}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+button.small{padding:6px 12px;font-size:14px}
+button:disabled{opacity:.35;cursor:default}
+.row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.row>input{flex:1;min-width:120px}
+.tick{color:var(--accent);font-weight:600}
+.big{font-size:30px;font-family:Georgia,serif;line-height:1.1}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.grid .card{margin:0}
+.lab{color:var(--soft);font-size:13px}
+.lvl{display:flex;align-items:center;gap:8px;margin:2px 0 6px}
+.badge{background:var(--accent);color:var(--card);border-radius:20px;font-size:13px;font-weight:600;padding:2px 10px}
+.dots{display:flex;gap:6px;margin:8px 0}
+.dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--accent)}
+.dot.on{background:var(--accent)}
+.ladder{margin-top:10px;font-size:14px;color:var(--soft);display:none}
+.ladder.open{display:block}
+.ladder div{padding:4px 0}
+.ladder .me{color:var(--ink);font-weight:600}
+ul.list{list-style:none;margin-top:8px}
+ul.list li{font-size:14px;padding:7px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+ul.list li span.s{color:var(--soft);white-space:nowrap}
+.x{background:none;color:var(--soft);padding:0 4px;font-weight:400}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
+nav button{background:none;color:var(--soft);font-weight:500;flex:0 1 110px;padding:8px}
+nav button.on{color:var(--accent);font-weight:700}
+.view{display:none}.view.on{display:block}
+.toggle{display:flex;gap:6px}
+.toggle button{background:var(--bg);color:var(--soft);border:1px solid var(--line)}
+.toggle button.on{background:var(--accent);color:var(--card);border-color:var(--accent)}
+.link{background:none;color:var(--accent);padding:0;font-weight:600;text-decoration:underline}
+.pills{display:flex;gap:4px;margin-top:6px}.pills button{flex:1;background:var(--bg);color:var(--soft);border:1px solid var(--line);font-size:13px;padding:6px 2px;font-weight:500}.pills button.on{background:var(--accent);color:var(--card);border-color:var(--accent)}
+.sk{padding:12px 0;border-top:1px solid var(--line)}.sk:first-of-type{border-top:0}.skn{display:flex;justify-content:space-between;gap:8px;font-size:15px}
+.ready{color:var(--accent);font-weight:600}.almost{color:var(--warm)}
+.quiet{color:var(--soft);font-size:13px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<main>
+<header><h1 id="title">Today</h1><span class="date" id="today"></span></header>
+<p id="syncnote" class="hint"></p>
+
+<section class="view on" id="v-today"></section>
+<section class="view" id="v-levels"></section>
+<section class="view" id="v-craft"></section>
+<section class="view" id="v-work"></section>
+</main>
+<nav>
+<button class="on" data-v="today">Today</button>
+<button data-v="levels">Levels</button>
+<button data-v="craft">Craft</button>
+<button data-v="work">Work</button>
+</nav>
+
+<script>
+const KEY='vic-growth-v1';
+const TRACKS={
+ designer:{name:'Brand designer',levels:['Follows other people\'s designs','Builds brands from scratch','Every design choice has a clear reason','Clients actually use the brand well, and pay ₦500k+','People come to you by name']},
+ strategist:{name:'Brand strategist',levels:['Follows the brief as given','Spots the real problem, by instinct','Spots it every time and writes it down (paid discovery)','Sells strategy on its own','Helps shape business decisions']},
+ director:{name:'Creative director',levels:['Leads 1 or 2 people on a project','Guides other people\'s work to your standard','Owns the big picture on larger projects','Runs a team','Sets a style others follow']}
+};
+const day=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const daysSince=s=>s?Math.floor((new Date(day())-new Date(s))/864e5):9999;
+const fresh=()=>({levels:{designer:3,strategist:2,director:1},proofs:[],notes:{},teardowns:[],projects:[],lastCheck:day(),lastBackup:null,history:[],deleted:[],updatedAt:0,craft:{},customSkills:[],practice:[]});
+const uid0=()=>Math.random().toString(36).slice(2,9);
+const fix=s=>{s=Object.assign(fresh(),s||{});s.teardowns.forEach(t=>{if(!t.id)t.id=uid0()});return s};
+let S;try{S=fix(JSON.parse(localStorage.getItem(KEY)))}catch(e){S=fresh()}
+const store=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const save=()=>{S.updatedAt=Date.now();store();queuePush()};
+store();
+
+/* ---------- Sync through a secret GitHub gist ---------- */
+const SKEY='vic-growth-sync',FILE='vic-growth.json',API='https://api.github.com/gists';
+let SY;try{SY=JSON.parse(localStorage.getItem(SKEY))||{}}catch(e){SY={}}
+const saveSY=()=>{try{localStorage.setItem(SKEY,JSON.stringify(SY))}catch(e){}};
+let syncState='',pushTimer=null,busy=false,again=false;
+const hdr=()=>({Authorization:'Bearer '+SY.token,Accept:'application/vnd.github+json','Content-Type':'application/json'});
+function mergeArr(a,b,newerIsB,dead){const m=new Map();(newerIsB?a:b).forEach(x=>m.set(x.id,x));(newerIsB?b:a).forEach(x=>m.set(x.id,x));return[...m.values()].filter(x=>!dead.has(x.id))}
+function merge(L,R){
+ R=fix(R);const bNew=R.updatedAt>L.updatedAt,N=bNew?R:L,O=bNew?L:R;
+ const dead=new Set([...L.deleted,...R.deleted]);
+ const out=Object.assign({},N);
+ out.deleted=[...dead];
+ out.notes=Object.assign({},O.notes,N.notes);
+ for(const k of ['proofs','teardowns','projects','customSkills','practice'])out[k]=mergeArr(L[k],R[k],bNew,dead);
+ const hk=h=>h.track+h.from+h.to+h.date,hm=new Map();[...O.history,...N.history].forEach(h=>hm.set(hk(h),h));out.history=[...hm.values()].sort((a,b)=>a.date<b.date?-1:1);
+ out.craft={};for(const k of new Set([...Object.keys(L.craft),...Object.keys(R.craft)])){const a=L.craft[k],b=R.craft[k];out.craft[k]=!a?b:!b?a:(b.ts>a.ts?b:a)}
+ out.updatedAt=Math.max(L.updatedAt,R.updatedAt);
+ return out;
+}
+async function findGist(){
+ for(let page=1;page<=5;page++){
+  const r=await fetch(API+'?per_page=100&page='+page,{headers:hdr()});
+  if(r.status==401)throw new Error('token');
+  const list=await r.json();if(!list.length)break;
+  const g=list.find(x=>x.files&&x.files[FILE]);if(g)return g.id;
+ }
+ const r=await fetch(API,{method:'POST',headers:hdr(),body:JSON.stringify({description:'Growth tracker data',public:false,files:{[FILE]:{content:JSON.stringify(S)}}})});
+ if(!r.ok)throw new Error(r.status==401?'token':'net');
+ return (await r.json()).id;
+}
+async function sync(){
+ if(!SY.token)return;
+ if(busy){again=true;return}
+ busy=true;setSync('Syncing…');
+ try{
+  if(!SY.gist){SY.gist=await findGist();saveSY()}
+  const r=await fetch(API+'/'+SY.gist,{headers:hdr(),cache:'no-store'});
+  if(r.status==401)throw new Error('token');
+  if(r.status==404){SY.gist=null;saveSY();throw new Error('net')}
+  const g=await r.json(),f=g.files[FILE];
+  let remote=null;
+  if(f){const txt=f.truncated?await (await fetch(f.raw_url)).text():f.content;try{remote=JSON.parse(txt)}catch(e){}}
+  const merged=remote?merge(S,remote):S;
+  const changedLocal=JSON.stringify(merged)!==JSON.stringify(S);
+  const needPush=!remote||JSON.stringify(merged)!==JSON.stringify(fix(remote));
+  S=merged;store();
+  if(needPush){const p=await fetch(API+'/'+SY.gist,{method:'PATCH',headers:hdr(),body:JSON.stringify({files:{[FILE]:{content:JSON.stringify(S)}}})});if(!p.ok)throw new Error(p.status==401?'token':'net')}
+  SY.last=Date.now();saveSY();setSync('');
+  if(changedLocal)renderAll();
+ }catch(e){setSync(e.message=='token'?'token':'offline')}
+ busy=false;
+ if(again){again=false;sync()}
+}
+function queuePush(){if(!SY.token)return;clearTimeout(pushTimer);pushTimer=setTimeout(sync,1500)}
+function setSync(s){syncState=s;const el=document.getElementById('syncnote');if(el)el.innerHTML=syncLine()}
+function syncLine(){
+ if(!SY.token)return '';
+ if(syncState=='token')return 'Sync stopped: the GitHub key no longer works. <button class="link" onclick="go(\'work\')">Fix it</button>';
+ if(syncState=='offline')return 'Offline. Changes will sync when you\'re back online.';
+ return '';
+}
+async function connect(){
+ const v=document.getElementById('tok').value.trim();if(!v)return;
+ SY={token:v};saveSY();setSync('Syncing…');await sync();renderWork();
+}
+function disconnect(){SY={};saveSY();syncState='';renderAll()}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState=='visible')sync()});
+window.addEventListener('online',()=>sync());
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const naira=n=>'₦'+Math.round(n).toLocaleString('en-NG');
+const nice=s=>new Date(s+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+function weekStart(){const d=new Date();const w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return day(d)}
+
+function streak(){let n=0;const d=new Date();if(!S.notes[day(d)])d.setDate(d.getDate()-1);while(S.notes[day(d)]){n++;d.setDate(d.getDate()-1)}return n}
+
+function renderToday(){
+ const t=day(),note=S.notes[t];let h='';
+ const st=streak();
+ if(note&&!window._editNote){
+  h+=`<div class="card done"><h2><span class="tick">Done</span> · Today's why</h2><p style="margin:6px 0 8px">${esc(note)}</p><button class="link" onclick="_editNote=1;renderToday()">Edit</button>${st>1?`<span class="lab" style="float:right">${st} days in a row</span>`:''}</div>`;
+ }else{
+  h+=`<div class="card"><h2>Today's why</h2><p class="hint">Pick one design choice, yours or a brand's. Why was it made? Two sentences.</p><textarea id="note" placeholder="e.g. The arch in Joie Luxe's mark... because...">${note?esc(note):''}</textarea><div class="row"><button onclick="saveNote()">Save</button>${st?`<span class="lab">${st} day${st>1?'s':''} in a row</span>`:''}</div></div>`;
+ }
+ const tw=S.teardowns.filter(x=>x.date>=weekStart());
+ if(tw.length){h+=`<div class="card done"><h2><span class="tick">Done</span> · This week's brand breakdown</h2><p class="hint" style="margin:0">${tw.map(x=>esc(x.brand)).join(', ')}</p></div>`}
+ else{h+=`<div class="card"><h2>This week's brand breakdown</h2><p class="hint">Break down one brand: who it's for, what problem it solves, and why it looks the way it does.</p><div class="row"><input type="text" id="td" placeholder="Brand name"><button onclick="addTd()">Done</button></div></div>`}
+ {const pw=S.practice.filter(x=>x.date>=weekStart()),names=allSkills();
+ if(pw.length)h+=`<div class="card done"><h2><span class="tick">Done</span> · This week's craft practice</h2><p class="hint" style="margin:0">${pw.map(x=>esc(names[x.skill]||'A skill')).join(', ')}</p></div>`;
+ else if(Object.keys(S.craft).length>=5){const f=focusSkill();if(f)h+=`<div class="card"><h2>This week's craft practice</h2><p class="hint">Spend one session on <b>${esc(f.name.toLowerCase())}</b>. It's what's holding back the most work you could take on.</p><div class="row"><button class="small" onclick="practised('${f.id}')">Done</button></div></div>`}
+ else h+=`<div class="card"><h2>Rate your craft skills</h2><p class="hint" style="margin:0">A 2-minute, one-time job. <button class="link" onclick="go('craft')">Open Craft</button></p></div>`;}
+ S.projects.filter(p=>p.handover&&!p.rollout&&daysSince(p.handover)>=14).forEach(p=>{
+  h+=`<div class="card due"><h2>Check on ${esc(p.client)}</h2><p class="hint">It's been ${daysSince(p.handover)} days since handover. Are they using the brand properly?</p><div class="row"><button class="small" onclick="roll('${p.id}','yes')">Yes</button><button class="small ghost" onclick="roll('${p.id}','no')">Not really</button></div></div>`});
+ if(new Date().getDate()<=7&&S.projects.length){h+=`<div class="card due"><h2>Money check</h2><p class="hint" style="margin:0">New month. Take a quick look at your numbers. <button class="link" onclick="go('work')">Open Work</button></p></div>`}
+ if(daysSince(S.lastCheck)>=90){h+=`<div class="card due"><h2>Time to check your levels</h2><p class="hint" style="margin:0">It's been 3 months. Look at your proof and move up where it's earned. <button class="link" onclick="checked()">I've checked</button> · <button class="link" onclick="go('levels')">Open Levels</button></p></div>`}
+ if(!SY.token&&daysSince(S.lastBackup)>=30&&(S.proofs.length+Object.keys(S.notes).length+S.projects.length)>3){h+=`<div class="card due"><h2>Save a backup</h2><p class="hint" style="margin:0">Keeps your progress safe if you clear your browser. <button class="link" onclick="backup()">Download backup</button></p></div>`}
+ $('v-today').innerHTML=h;
+}
+function saveNote(){const v=$('note').value.trim();if(!v)return;S.notes[day()]=v;window._editNote=0;save();renderToday()}
+function addTd(){const v=$('td').value.trim();if(!v)return;S.teardowns.push({id:uid(),date:day(),brand:v});save();renderToday();renderWork()}
+function roll(id,v){const p=S.projects.find(x=>x.id==id);p.rollout=v;save();renderToday();renderWork()}
+function checked(){S.lastCheck=day();save();renderToday()}
+
+function renderLevels(){
+ let h='<p class="hint">Move up one level after 3 real proofs: a project, a fee, client feedback, something you can point to.</p>';
+ for(const k in TRACKS){
+  const T=TRACKS[k],L=S.levels[k],next=L+1;
+  const pr=S.proofs.filter(p=>p.track==k&&p.level==next);
+  h+=`<div class="card"><div class="lvl"><h2 style="margin:0">${T.name}</h2><span class="badge">Level ${L}</span></div>
+  <p class="hint" style="margin-bottom:6px">Now: ${T.levels[L-1]}</p>`;
+  if(L<5){
+   h+=`<p style="font-size:14px"><b>Next:</b> ${T.levels[L]}</p><div class="dots">${[0,1,2].map(i=>`<span class="dot ${i<pr.length?'on':''}"></span>`).join('')}<span class="lab" style="margin-left:4px">${pr.length} of 3 proofs</span></div>
+   ${pr.length?`<ul class="list">${pr.map(p=>`<li><span>${esc(p.text)}</span><span class="s">${nice(p.date)} <button class="x" onclick="delProof('${p.id}')" aria-label="Remove">×</button></span></li>`).join('')}</ul>`:''}
+   ${pr.length>=3?`<div class="row"><button onclick="up('${k}')">Move up to Level ${next}</button></div>`:`<div class="row"><input type="text" id="p-${k}" placeholder="Add a proof"><button class="small" onclick="addProof('${k}')">Add</button></div>`}`;
+  }else h+='<p class="tick">Top level reached.</p>';
+  h+=`<div class="row"><button class="link" onclick="this.parentNode.nextElementSibling.classList.toggle('open')">See all levels</button></div><div class="ladder">${T.levels.map((t,i)=>`<div class="${i+1==L?'me':''}">${i+1}. ${t}</div>`).join('')}${L>1?`<div style="margin-top:6px"><button class="link" onclick="down('${k}')">Move down a level</button></div>`:''}</div></div>`;
+ }
+ if(S.history.length)h+=`<div class="card"><h2>Level ups</h2><ul class="list">${S.history.slice().reverse().map(x=>`<li><span>${TRACKS[x.track].name}: ${x.from} to ${x.to}</span><span class="s">${nice(x.date)}</span></li>`).join('')}</ul></div>`;
+ $('v-levels').innerHTML=h;
+}
+function addProof(k){const i=$('p-'+k),v=i.value.trim();if(!v)return;S.proofs.push({id:uid(),track:k,level:S.levels[k]+1,text:v,date:day()});save();renderLevels()}
+function delProof(id){S.deleted.push(id);S.proofs=S.proofs.filter(p=>p.id!=id);save();renderLevels()}
+function up(k){const f=S.levels[k];S.levels[k]=f+1;S.history.push({track:k,from:f,to:f+1,date:day()});save();renderLevels()}
+function down(k){S.levels[k]--;save();renderLevels()}
+
+
+/* ---------- Craft ---------- */
+const LV=['Learning','Can do','Confident','Excellent'];
+const LVHINT=['Still learning it','Can do it, but slowly or with help','Done it well on real client work','Could teach it to someone else'];
+const SKILLS=[
+ ['The identity',[['logo','Logo and mark design'],['type','Choosing and pairing fonts'],['letter','Custom wordmarks and lettering'],['colour','Colour palettes'],['grid','Grids and layout rules'],['elements','Patterns and brand graphics']]],
+ ['Using the brand',[['guide','Brand guidelines'],['pack','Packaging and labels'],['print','Print and signage'],['social','Social media templates'],['deck','Presentations and decks'],['station','Stationery and documents']]],
+ ['Bringing it to life',[['anim','Logo animation'],['motion','Motion rules for a brand'],['mock','Mockups and presenting work'],['icons','Icons and illustration'],['photo','Directing photos and images']]],
+ ['Tools',[['t-ai','Illustrator'],['t-ps','Photoshop'],['t-id','InDesign'],['t-ae','After Effects'],['t-fig','Figma']]]
+];
+const JOBS=[
+ ['Logo and identity',['logo','type','colour']],
+ ['Full brand system with guidelines',['logo','type','colour','grid','elements','guide']],
+ ['Packaging and labels',['pack','type','colour']],
+ ['Social media kit',['social','grid','type']],
+ ['Pitch and presentation decks',['deck','grid','type']],
+ ['Print and signage',['print','grid','type']],
+ ['Logo animation',['anim','t-ae']],
+ ['Motion brand system',['anim','motion','t-ae']]
+];
+const allSkills=()=>{const m={};SKILLS.forEach(g=>g[1].forEach(([id,n])=>m[id]=n));S.customSkills.forEach(c=>m[c.id]=c.name);return m};
+const lvl=id=>(S.craft[id]&&S.craft[id].lvl)||0;
+function jobStatus(){return JOBS.map(([n,req])=>({n,miss:req.filter(r=>lvl(r)<3)}))}
+function focusSkill(){
+ const names=allSkills(),c={};jobStatus().forEach(j=>{if(j.miss.length<=2)j.miss.forEach(m=>c[m]=(c[m]||0)+1)});
+ let best=Object.keys(c).sort((a,b)=>c[b]-c[a]||lvl(b)-lvl(a))[0];
+ if(!best){const low=Object.keys(names).filter(k=>!k.startsWith('t-')&&lvl(k)>0&&lvl(k)<4).sort((a,b)=>lvl(a)-lvl(b));best=low[0]}
+ return best?{id:best,name:names[best]}:null;
+}
+let openSkill=null;
+function renderCraft(){
+ const rated=Object.keys(S.craft).length;
+ let h='';
+ if(rated<5)h+=`<div class="card due"><h2>Rate your skills once</h2><p class="hint" style="margin:0">Tap a level for each skill. Be honest: "Confident" means you've done it well for a real client.</p></div>`;
+ const js=jobStatus(),ready=js.filter(j=>!j.miss.length),names=allSkills();
+ h+=`<div class="card"><h2>Work you can take on</h2><ul class="list">${js.map(j=>`<li style="display:block"><div class="skn"><span>${j.n}</span><span class="${j.miss.length?'lab':'ready'}" style="font-size:13px">${j.miss.length?(j.miss.length<=2?'Almost':'Not yet'):'Ready'}</span></div>${j.miss.length&&j.miss.length<=2?`<div class="lab almost">Needs: ${j.miss.map(m=>names[m].toLowerCase()).join(', ')}</div>`:''}</li>`).join('')}</ul></div>`;
+ const groups=SKILLS.concat(S.customSkills.length?[['Your own skills',S.customSkills.map(c=>[c.id,c.name,1])]]:[]);
+ groups.forEach(([g,list])=>{
+  h+=`<div class="card"><h2>${g}</h2>`;
+  list.forEach(([id,n,custom])=>{
+   const c=S.craft[id],L=lvl(id);
+   h+=`<div class="sk"><div class="skn"><span>${esc(n)}</span><span class="lab">${L?LV[L-1]:'Not rated'}${custom?` <button class="x" onclick="delSkill('${id}')" aria-label="Remove">×</button>`:''}</span></div>
+   <div class="pills">${LV.map((t,i)=>`<button class="${L==i+1?'on':''}" title="${LVHINT[i]}" onclick="pick('${id}',${i+1})">${t}</button>`).join('')}</div>
+   ${openSkill&&openSkill.id==id?`<div class="row"><input type="text" id="proof-in" placeholder="Which project shows it?"><button class="small" onclick="pickSave()">Save</button></div>`:''}
+   ${c&&c.proof&&L>=3?`<p class="lab" style="margin-top:6px">Proof: ${esc(c.proof)}</p>`:''}</div>`;
+  });
+  h+='</div>';
+ });
+ h+=`<div class="card"><h2>Add your own skill</h2><div class="row"><input type="text" id="new-skill" placeholder="e.g. 3D renders"><button class="small" onclick="addSkill()">Add</button></div></div>`;
+ h+=`<p class="quiet">Learning · Can do · Confident (proven on client work) · Excellent (could teach it)</p>`;
+ $('v-craft').innerHTML=h;
+ if(openSkill)setTimeout(()=>{const i=$('proof-in');if(i)i.focus()},0);
+}
+function pick(id,l){
+ if(l>=3&&!(S.craft[id]&&S.craft[id].proof)){openSkill={id,l};renderCraft();return}
+ S.craft[id]=Object.assign({},S.craft[id],{lvl:l,ts:Date.now(),date:day()});openSkill=null;save();renderCraft();renderToday();
+}
+function pickSave(){const v=$('proof-in').value.trim();if(!v)return;S.craft[openSkill.id]={lvl:openSkill.l,proof:v,ts:Date.now(),date:day()};openSkill=null;save();renderCraft();renderToday()}
+function addSkill(){const v=$('new-skill').value.trim();if(!v)return;S.customSkills.push({id:'c-'+uid(),name:v});save();renderCraft()}
+function delSkill(id){S.deleted.push(id);S.customSkills=S.customSkills.filter(c=>c.id!=id);delete S.craft[id];save();renderCraft()}
+function practised(id){S.practice.push({id:uid(),date:day(),skill:id});save();renderToday()}
+
+let disc=false;
+function renderWork(){
+ const P=S.projects,paid=P.filter(p=>+p.fee>0);
+ const avg=paid.length?paid.reduce((a,p)=>a+ +p.fee,0)/paid.length:0;
+ const dp=P.length?Math.round(P.filter(p=>p.discovery).length/P.length*100):0;
+ const rc=P.filter(p=>p.rollout),ru=rc.length?Math.round(rc.filter(p=>p.rollout=='yes').length/rc.length*100):null;
+ const mo=day().slice(0,7),tdm=S.teardowns.filter(t=>t.date.startsWith(mo)).length;
+ let h=`<div class="grid">
+ <div class="card"><div class="lab">Average fee</div><div class="big">${paid.length?naira(avg):'–'}</div></div>
+ <div class="card"><div class="lab">Paid discovery</div><div class="big">${P.length?dp+'%':'–'}</div><div class="lab">of projects</div></div>
+ <div class="card"><div class="lab">Brands used well</div><div class="big">${ru===null?'–':ru+'%'}</div><div class="lab">after handover</div></div>
+ <div class="card"><div class="lab">Breakdowns</div><div class="big">${tdm}</div><div class="lab">this month · ${S.teardowns.length} total</div></div>
+ </div>
+ <div class="card"><h2>Add a project</h2>
+ <div class="row"><input type="text" id="w-client" placeholder="Client"></div>
+ <div class="row"><input type="number" id="w-fee" placeholder="Fee in naira" inputmode="numeric"></div>
+ <div class="row"><span class="lab" style="flex:1">Did they pay for discovery?</span><div class="toggle"><button class="${disc?'on':''}" onclick="disc=true;renderWork()">Yes</button><button class="${!disc?'on':''}" onclick="disc=false;renderWork()">No</button></div></div>
+ <div class="row"><span class="lab" style="flex:1">Handover date (optional)</span><input type="date" id="w-date" style="flex:1"></div>
+ <div class="row"><button onclick="addProject()">Save project</button></div></div>`;
+ if(P.length)h+=`<div class="card"><h2>Projects</h2><ul class="list">${P.slice().reverse().map(p=>`<li><span>${esc(p.client)}${p.discovery?' · discovery':''}${p.rollout?` · ${p.rollout=='yes'?'used well':'not used well'}`:''}${!p.handover?` · <button class="link" style="font-size:13px" onclick="handNow('${p.id}')">Handed over today</button>`:''}</span><span class="s">${+p.fee?naira(p.fee):''} <button class="x" onclick="delProject('${p.id}')" aria-label="Remove">×</button></span></li>`).join('')}</ul></div>`;
+ h+=SY.token?`<div class="card done"><h2><span class="tick">Sync on</span></h2><p class="hint" style="margin:0">Your phone and PC share the same data.${SY.last?' Last synced '+new Date(SY.last).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'.':''} <button class="link" onclick="sync()">Sync now</button> · <button class="link" onclick="disconnect()">Turn off</button></p></div>`
+ :`<div class="card"><h2>Sync your phone and PC</h2><p class="hint">Paste your GitHub key once on each device. Same key on both.</p><div class="row"><input type="text" id="tok" placeholder="GitHub key (starts with ghp_)" autocomplete="off"><button class="small" onclick="connect()">Connect</button></div></div>`;
+ h+=`<div class="card"><h2>Backup</h2><p class="hint">A spare copy of your data, just in case.</p><div class="row"><button class="small" onclick="backup()">Download backup</button><label class="small ghost" style="border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:14px;font-weight:600;color:var(--accent);cursor:pointer">Restore<input type="file" accept=".json" onchange="restore(this)" style="display:none"></label></div>${S.lastBackup?`<p class="lab" style="margin-top:8px">Last backup: ${nice(S.lastBackup)}</p>`:''}</div>`;
+ $('v-work').innerHTML=h;
+}
+function addProject(){const c=$('w-client').value.trim();if(!c)return;S.projects.push({id:uid(),client:c,fee:+$('w-fee').value||0,discovery:disc,handover:$('w-date').value||null,rollout:null});disc=false;save();renderWork();renderToday()}
+function handNow(id){S.projects.find(p=>p.id==id).handover=day();save();renderWork()}
+function delProject(id){S.deleted.push(id);S.projects=S.projects.filter(p=>p.id!=id);save();renderWork();renderToday()}
+function backup(){S.lastBackup=day();save();const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='growth-backup-'+day()+'.json';document.body.appendChild(a);a.click();a.remove();renderAll()}
+function restore(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.levels)throw 0;S=fix(d);save();renderAll();alertSoft('Restored.')}catch(e){alertSoft('That file didn\'t work. Pick a growth backup file.')}};r.readAsText(f)}
+function alertSoft(m){const p=document.createElement('p');p.className='quiet';p.textContent=m;$('v-work').appendChild(p);setTimeout(()=>p.remove(),3000)}
+
+function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id=='v-'+v));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));$('title').textContent=v[0].toUpperCase()+v.slice(1);window.scrollTo(0,0)}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+function renderAll(){setSync(syncState);$('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});renderToday();renderLevels();renderCraft();renderWork()}
+renderAll();sync();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
